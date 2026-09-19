@@ -26,12 +26,13 @@ jobs:
         run: |
           unzip -q RoseFPSBooster-26.1-source.zip -d extracted
 
-      - name: Fix Mojang mappings
-        working-directory: extracted/RoseFPSBooster261_Project
-        run: |
-          sed -i '/mappings loom\.officialMojangMappings()/d' build.gradle
-          echo "Updated build.gradle:"
-          cat build.gradle
+      - name: Fix build.gradle
+  working-directory: extracted/RoseFPSBooster261_Project
+  run: |
+    sed -i '/mappings loom\.officialMojangMappings()/d' build.gradle
+    sed -i 's/implementation "net\.fabricmc:fabric-loader:/modImplementation "net.fabricmc:fabric-loader:/' build.gradle
+    echo "Updated build.gradle:"
+    cat build.gradle
 
       - name: Build mod
         working-directory: extracted/RoseFPSBooster261_Project
