@@ -26,17 +26,31 @@ jobs:
         run: |
           unzip -q RoseFPSBooster-26.1-source.zip -d extracted
 
-      - name: Fix build.gradle
+      - name: Fix Minecraft 26.1 build.gradle
         working-directory: extracted/RoseFPSBooster261_Project
         run: |
-          sed -i '/mappings loom\.officialMojangMappings()/d' build.gradle
-          sed -i 's/implementation "net\.fabricmc:fabric-loader:/modImplementation "net.fabricmc:fabric-loader:/' build.gradle
-          echo "Updated build.gradle:"
+          # Loom 26.1+
+          sed -i "s/id ['\"]fabric-loom['\"]/id 'net.fabricmc.fabric-loom'/g" build.gradle
+
+          # 26.1 uses normal Gradle dependency configurations
+          sed -i 's/modImplementation/implementation/g' build.gradle
+          sed -i 's/modCompileOnly/compileOnly/g' build.gradle
+          sed -i 's/modApi/api/g' build.gradle
+
+          # 26.1 does not use a mappings dependency line
+          sed -i '/^[[:space:]]*mappings[[:space:]]/d' build.gradle
+
+          # Non-remapping Loom uses jar instead of remapJar
+          sed -i 's/remapJar/jar/g' build.gradle
+
+          echo "===== FINAL build.gradle ====="
           cat build.gradle
+          echo "=============================="
 
       - name: Build mod
         working-directory: extracted/RoseFPSBooster261_Project
-        run: gradle build --no-daemon
+        run: |
+          gradle clean build --no-daemon --refresh-dependencies
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
