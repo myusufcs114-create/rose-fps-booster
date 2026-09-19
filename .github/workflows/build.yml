@@ -1,0 +1,38 @@
+name: Build Rose FPS Booster
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Java 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.14'
+
+      - name: Extract project
+        run: |
+          unzip -q RoseFPSBooster-26.1-source.zip -d extracted
+          find extracted -maxdepth 3 -type f | head -50
+
+      - name: Build mod
+        working-directory: extracted/RoseFPSBooster261_Project
+        run: gradle build --no-daemon
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rose-FPS-Booster-26.1
+          path: extracted/RoseFPSBooster261_Project/build/libs/*.jar
