@@ -26,31 +26,54 @@ jobs:
         run: |
           unzip -q RoseFPSBooster-26.1-source.zip -d extracted
 
+      - name: Fix Minecraft 26.1 settings
+        working-directory: extracted/RoseFPSBooster261_Project
+        run: |
+          if [ -f settings.gradle ]; then
+            sed -i 's/PREFER_SETTINGS/PREFER_PROJECT/g' settings.gradle
+          fi
+
+          echo "===== SETTINGS.GRADLE ====="
+          cat settings.gradle
+          echo "==========================="
+
       - name: Fix Minecraft 26.1 build.gradle
         working-directory: extracted/RoseFPSBooster261_Project
         run: |
-          # Loom 26.1+
+          # Use the correct Loom plugin for Minecraft 26.1+
           sed -i "s/id ['\"]fabric-loom['\"]/id 'net.fabricmc.fabric-loom'/g" build.gradle
 
-          # 26.1 uses normal Gradle dependency configurations
+          # Replace old Fabric dependency configurations
           sed -i 's/modImplementation/implementation/g' build.gradle
           sed -i 's/modCompileOnly/compileOnly/g' build.gradle
           sed -i 's/modApi/api/g' build.gradle
 
-          # 26.1 does not use a mappings dependency line
+          # Remove old mappings declaration
           sed -i '/^[[:space:]]*mappings[[:space:]]/d' build.gradle
 
-          # Non-remapping Loom uses jar instead of remapJar
+          # Minecraft 26.1 uses non-remapping Loom
           sed -i 's/remapJar/jar/g' build.gradle
 
-          echo "===== FINAL build.gradle ====="
+          echo "===== BUILD.GRADLE ====="
           cat build.gradle
-          echo "=============================="
+          echo "========================"
+
+      - name: Check Gradle configuration
+        working-directory: extracted/RoseFPSBooster261_Project
+        run: |
+          gradle tasks --no-daemon --refresh-dependencies
 
       - name: Build mod
         working-directory: extracted/RoseFPSBooster261_Project
         run: |
           gradle clean build --no-daemon --refresh-dependencies
+
+      - name: Show build output
+        working-directory: extracted/RoseFPSBooster261_Project
+        run: |
+          echo "===== BUILD LIBS ====="
+          ls -lah build/libs/
+          echo "======================"
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
