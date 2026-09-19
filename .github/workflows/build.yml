@@ -25,7 +25,13 @@ jobs:
       - name: Extract project
         run: |
           unzip -q RoseFPSBooster-26.1-source.zip -d extracted
-          find extracted -maxdepth 3 -type f | head -50
+
+      - name: Fix Mojang mappings
+        working-directory: extracted/RoseFPSBooster261_Project
+        run: |
+          sed -i '/mappings loom\.officialMojangMappings()/d' build.gradle
+          echo "Updated build.gradle:"
+          cat build.gradle
 
       - name: Build mod
         working-directory: extracted/RoseFPSBooster261_Project
