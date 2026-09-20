@@ -51,46 +51,57 @@ jobs:
           mkdir -p ai-assistant
           unzip -o "${{ steps.find_zip.outputs.zip }}" -d ai-assistant
 
-          echo "=== PROJECT FILES ==="
           find ai-assistant -maxdepth 4 -type f | sort
 
-      - name: Configure Minecraft repositories
+      - name: Configure repositories
         working-directory: ai-assistant
         shell: bash
         run: |
-          cat >> settings.gradle <<'EOF'
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  maven {
+                      name = "Fabric"
+                      url = uri("https://maven.fabricmc.net/")
+                  }
+                  gradlePluginPortal()
+                  mavenCentral()
+              }
+          }
 
           dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+
               repositories {
                   maven {
                       name = "Fabric"
                       url = uri("https://maven.fabricmc.net/")
                   }
 
+                  maven {
+                      name = "Mojang"
+                      url = uri("https://libraries.minecraft.net/")
+                  }
+
                   mavenCentral()
               }
           }
+
+          rootProject.name = "MinecraftAIAssistant"
           EOF
 
-          echo "=== SETTINGS.GRADLE ==="
+          echo "=== NEW settings.gradle ==="
           cat settings.gradle
 
       - name: Verify Gradle project
         shell: bash
         run: |
-          if [ ! -f "ai-assistant/build.gradle" ] && \
-             [ ! -f "ai-assistant/build.gradle.kts" ]; then
-            echo "build.gradle tidak ditemukan!"
-            find ai-assistant -maxdepth 5 -type f | sort
-            exit 1
-          fi
-
-          echo "Gradle project ditemukan."
+          test -f ai-assistant/build.gradle || test -f ai-assistant/build.gradle.kts
 
       - name: Build AI Assistant
         working-directory: ai-assistant
         run: |
-          gradle build --no-daemon
+          gradle build --no-daemon --refresh-dependencies
 
       - name: Show JAR
         shell: bash
