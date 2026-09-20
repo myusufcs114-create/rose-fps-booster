@@ -21,6 +21,11 @@ jobs:
           distribution: temurin
           java-version: "25"
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: "9.4"
+
       - name: Find AI Assistant ZIP
         id: find_zip
         shell: bash
@@ -43,51 +48,34 @@ jobs:
           mkdir -p ai-assistant
           unzip -o "${{ steps.find_zip.outputs.zip }}" -d ai-assistant
 
-          echo "=== Isi AI Assistant ==="
-          find ai-assistant -maxdepth 3 -type f | head -100
+          echo "=== PROJECT FILES ==="
+          find ai-assistant -maxdepth 4 -type f | sort
 
       - name: Locate Gradle project
         shell: bash
         run: |
-          if [ -f "ai-assistant/gradlew" ]; then
+          if [ -f "ai-assistant/build.gradle" ] || [ -f "ai-assistant/build.gradle.kts" ]; then
             echo "Gradle project ditemukan di ai-assistant/"
-          elif [ -f "ai-assistant/minecraft-ai-assistant-26.1/gradlew" ]; then
-            echo "Gradle project ditemukan di subfolder"
           else
-            echo "gradlew tidak ditemukan!"
+            echo "Gradle project tidak ditemukan!"
             find ai-assistant -maxdepth 5 -type f | sort
             exit 1
           fi
 
-      - name: Prepare Gradle
-        shell: bash
-        run: |
-          if [ -f "ai-assistant/gradlew" ]; then
-            chmod +x ai-assistant/gradlew
-          else
-            chmod +x ai-assistant/minecraft-ai-assistant-26.1/gradlew
-          fi
-
       - name: Build AI Assistant
-        shell: bash
+        working-directory: ai-assistant
         run: |
-          if [ -f "ai-assistant/gradlew" ]; then
-            cd ai-assistant
-          else
-            cd ai-assistant/minecraft-ai-assistant-26.1
-          fi
-
-          ./gradlew build --no-daemon
+          gradle build --no-daemon
 
       - name: Show JAR
         shell: bash
         run: |
           echo "=== JAR HASIL BUILD ==="
-          find ai-assistant -type f -name "*.jar" -print
+          find ai-assistant/build/libs -type f -name "*.jar" -print
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: minecraft-ai-assistant-26.1
-          path: ai-assistant/**/build/libs/*.jar
+          path: ai-assistant/build/libs/*.jar
           if-no-files-found: error
