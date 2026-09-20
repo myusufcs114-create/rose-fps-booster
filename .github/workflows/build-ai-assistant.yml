@@ -54,6 +54,27 @@ jobs:
           echo "=== PROJECT FILES ==="
           find ai-assistant -maxdepth 4 -type f | sort
 
+      - name: Configure Minecraft repositories
+        working-directory: ai-assistant
+        shell: bash
+        run: |
+          cat >> settings.gradle <<'EOF'
+
+          dependencyResolutionManagement {
+              repositories {
+                  maven {
+                      name = "Fabric"
+                      url = uri("https://maven.fabricmc.net/")
+                  }
+
+                  mavenCentral()
+              }
+          }
+          EOF
+
+          echo "=== SETTINGS.GRADLE ==="
+          cat settings.gradle
+
       - name: Verify Gradle project
         shell: bash
         run: |
