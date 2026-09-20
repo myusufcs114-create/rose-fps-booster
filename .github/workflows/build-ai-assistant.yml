@@ -21,10 +21,13 @@ jobs:
           distribution: temurin
           java-version: "25"
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
-        with:
-          gradle-version: "9.4"
+      - name: Install Gradle 9.4.0
+        shell: bash
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-9.4.0-bin.zip
+          unzip -q gradle-9.4.0-bin.zip
+          echo "$PWD/gradle-9.4.0/bin" >> "$GITHUB_PATH"
+          gradle --version
 
       - name: Find AI Assistant ZIP
         id: find_zip
@@ -51,16 +54,17 @@ jobs:
           echo "=== PROJECT FILES ==="
           find ai-assistant -maxdepth 4 -type f | sort
 
-      - name: Locate Gradle project
+      - name: Verify Gradle project
         shell: bash
         run: |
-          if [ -f "ai-assistant/build.gradle" ] || [ -f "ai-assistant/build.gradle.kts" ]; then
-            echo "Gradle project ditemukan di ai-assistant/"
-          else
-            echo "Gradle project tidak ditemukan!"
+          if [ ! -f "ai-assistant/build.gradle" ] && \
+             [ ! -f "ai-assistant/build.gradle.kts" ]; then
+            echo "build.gradle tidak ditemukan!"
             find ai-assistant -maxdepth 5 -type f | sort
             exit 1
           fi
+
+          echo "Gradle project ditemukan."
 
       - name: Build AI Assistant
         working-directory: ai-assistant
