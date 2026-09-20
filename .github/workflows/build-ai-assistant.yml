@@ -34,11 +34,11 @@ jobs:
         shell: bash
         run: |
           echo "=== MENCARI FILE ZIP ==="
-          find . -maxdepth 3 -type f -name "*.zip" -print
 
-          ZIP=$(find . -maxdepth 3 -type f \
-            \( -name "minecraft-ai-assistant-26.1-fixed.zip" \
-            -o -name "minecraft-ai-assistant-26.1-github.zip" \) \
+          find . -maxdepth 1 -type f -iname "*.zip" -print
+
+          ZIP=$(find . -maxdepth 1 -type f \
+            -iname "*minecraft-ai-assistant*.zip" \
             | head -n 1)
 
           if [ -z "$ZIP" ]; then
@@ -55,50 +55,10 @@ jobs:
           rm -rf ai-assistant
           mkdir -p ai-assistant
 
-          unzip -o "${{ steps.find_zip.outputs.zip }}" -d ai-assistant
+          unzip -q "${{ steps.find_zip.outputs.zip }}" -d ai-assistant
 
           echo "=== PROJECT FILES ==="
           find ai-assistant -maxdepth 5 -type f | sort
-
-      - name: Configure repositories
-        working-directory: ai-assistant
-        shell: bash
-        run: |
-          cat > settings.gradle <<'EOF'
-          pluginManagement {
-              repositories {
-                  maven {
-                      name = "Fabric"
-                      url = uri("https://maven.fabricmc.net/")
-                  }
-                  gradlePluginPortal()
-                  mavenCentral()
-              }
-          }
-
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
-
-              repositories {
-                  maven {
-                      name = "Fabric"
-                      url = uri("https://maven.fabricmc.net/")
-                  }
-
-                  maven {
-                      name = "Mojang"
-                      url = uri("https://libraries.minecraft.net/")
-                  }
-
-                  mavenCentral()
-              }
-          }
-
-          rootProject.name = "MinecraftAIAssistant"
-          EOF
-
-          echo "=== SETTINGS.GRADLE ==="
-          cat settings.gradle
 
       - name: Verify Gradle project
         shell: bash
@@ -114,6 +74,7 @@ jobs:
 
       - name: Build AI Assistant
         working-directory: ai-assistant
+        shell: bash
         run: |
           gradle build --no-daemon --refresh-dependencies
 
