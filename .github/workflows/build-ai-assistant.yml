@@ -1,0 +1,61 @@
+name: Build Minecraft AI Assistant
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "minecraft-ai-assistant-26.1-github.zip"
+      - ".github/workflows/build-ai-assistant.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: gradle
+
+      - name: Find AI Assistant ZIP
+        id: find_zip
+        shell: bash
+        run: |
+          ZIP=$(find . -maxdepth 2 -type f -name "minecraft-ai-assistant-26.1-github.zip" | head -n 1)
+
+          if [ -z "$ZIP" ]; then
+            echo "AI Assistant ZIP tidak ditemukan!"
+            exit 1
+          fi
+
+          echo "ZIP ditemukan: $ZIP"
+          echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
+
+      - name: Extract AI Assistant
+        run: |
+          mkdir -p ai-assistant
+          unzip -o "${{ steps.find_zip.outputs.zip }}" -d ai-assistant
+
+      - name: Make Gradle executable
+        run: chmod +x ai-assistant/gradlew
+
+      - name: Build AI Assistant
+        working-directory: ai-assistant
+        run: ./gradlew build --no-daemon
+
+      - name: List build output
+        run: |
+          echo "=== BUILD OUTPUT ==="
+          find ai-assistant/build/libs -maxdepth 1 -type f -print
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: minecraft-ai-assistant-26.1
+          path: ai-assistant/build/libs/*.jar
+          if-no-files-found: error
