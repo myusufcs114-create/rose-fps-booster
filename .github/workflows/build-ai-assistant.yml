@@ -16,17 +16,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Java 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "25"
-          cache: gradle
 
       - name: Find AI Assistant ZIP
         id: find_zip
         shell: bash
         run: |
-          ZIP=$(find . -maxdepth 2 -type f -name "minecraft-ai-assistant-26.1-github.zip" | head -n 1)
+          ZIP=$(find . -maxdepth 3 -type f \
+            -name "minecraft-ai-assistant-26.1-github.zip" | head -n 1)
 
           if [ -z "$ZIP" ]; then
             echo "AI Assistant ZIP tidak ditemukan!"
@@ -37,25 +37,57 @@ jobs:
           echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
 
       - name: Extract AI Assistant
+        shell: bash
         run: |
+          rm -rf ai-assistant
           mkdir -p ai-assistant
           unzip -o "${{ steps.find_zip.outputs.zip }}" -d ai-assistant
 
-      - name: Make Gradle executable
-        run: chmod +x ai-assistant/gradlew
+          echo "=== Isi AI Assistant ==="
+          find ai-assistant -maxdepth 3 -type f | head -100
+
+      - name: Locate Gradle project
+        shell: bash
+        run: |
+          if [ -f "ai-assistant/gradlew" ]; then
+            echo "Gradle project ditemukan di ai-assistant/"
+          elif [ -f "ai-assistant/minecraft-ai-assistant-26.1/gradlew" ]; then
+            echo "Gradle project ditemukan di subfolder"
+          else
+            echo "gradlew tidak ditemukan!"
+            find ai-assistant -maxdepth 5 -type f | sort
+            exit 1
+          fi
+
+      - name: Prepare Gradle
+        shell: bash
+        run: |
+          if [ -f "ai-assistant/gradlew" ]; then
+            chmod +x ai-assistant/gradlew
+          else
+            chmod +x ai-assistant/minecraft-ai-assistant-26.1/gradlew
+          fi
 
       - name: Build AI Assistant
-        working-directory: ai-assistant
-        run: ./gradlew build --no-daemon
-
-      - name: List build output
+        shell: bash
         run: |
-          echo "=== BUILD OUTPUT ==="
-          find ai-assistant/build/libs -maxdepth 1 -type f -print
+          if [ -f "ai-assistant/gradlew" ]; then
+            cd ai-assistant
+          else
+            cd ai-assistant/minecraft-ai-assistant-26.1
+          fi
+
+          ./gradlew build --no-daemon
+
+      - name: Show JAR
+        shell: bash
+        run: |
+          echo "=== JAR HASIL BUILD ==="
+          find ai-assistant -type f -name "*.jar" -print
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: minecraft-ai-assistant-26.1
-          path: ai-assistant/build/libs/*.jar
+          path: ai-assistant/**/build/libs/*.jar
           if-no-files-found: error
