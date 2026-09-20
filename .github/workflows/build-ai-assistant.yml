@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "minecraft-ai-assistant-26.1-github.zip"
+      - "*.zip"
       - ".github/workflows/build-ai-assistant.yml"
 
 jobs:
@@ -33,8 +33,13 @@ jobs:
         id: find_zip
         shell: bash
         run: |
+          echo "=== MENCARI FILE ZIP ==="
+          find . -maxdepth 3 -type f -name "*.zip" -print
+
           ZIP=$(find . -maxdepth 3 -type f \
-            -name "minecraft-ai-assistant-26.1-github.zip" | head -n 1)
+            \( -name "minecraft-ai-assistant-26.1-fixed.zip" \
+            -o -name "minecraft-ai-assistant-26.1-github.zip" \) \
+            | head -n 1)
 
           if [ -z "$ZIP" ]; then
             echo "AI Assistant ZIP tidak ditemukan!"
@@ -49,9 +54,11 @@ jobs:
         run: |
           rm -rf ai-assistant
           mkdir -p ai-assistant
+
           unzip -o "${{ steps.find_zip.outputs.zip }}" -d ai-assistant
 
-          find ai-assistant -maxdepth 4 -type f | sort
+          echo "=== PROJECT FILES ==="
+          find ai-assistant -maxdepth 5 -type f | sort
 
       - name: Configure repositories
         working-directory: ai-assistant
@@ -90,13 +97,20 @@ jobs:
           rootProject.name = "MinecraftAIAssistant"
           EOF
 
-          echo "=== NEW settings.gradle ==="
+          echo "=== SETTINGS.GRADLE ==="
           cat settings.gradle
 
       - name: Verify Gradle project
         shell: bash
         run: |
-          test -f ai-assistant/build.gradle || test -f ai-assistant/build.gradle.kts
+          if [ ! -f "ai-assistant/build.gradle" ] && \
+             [ ! -f "ai-assistant/build.gradle.kts" ]; then
+            echo "build.gradle tidak ditemukan!"
+            find ai-assistant -maxdepth 5 -type f | sort
+            exit 1
+          fi
+
+          echo "Gradle project ditemukan."
 
       - name: Build AI Assistant
         working-directory: ai-assistant
